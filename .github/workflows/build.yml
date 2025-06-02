@@ -1,0 +1,64 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Add swap space
+      run: |
+        sudo fallocate -l 4G /swapfile
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+        sudo swapon /swapfile
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev
+        sudo update-alternatives --config java
+    
+    - name: Install Android SDK and NDK
+      run: |
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
+        wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O cmdline-tools.zip
+        unzip cmdline-tools.zip -d cmdline-tools
+        mv cmdline-tools/cmdline-tools ~/android-sdk
+        export ANDROID_SDK_ROOT=~/android-sdk
+        export PATH=$PATH:$ANDROID_SDK_ROOT/tools/bin
+        yes | sdkmanager --licenses
+        sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3"
+        wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O ndk.zip
+        unzip ndk.zip -d ~/
+        export ANDROID_NDK_HOME=~/android-ndk-r25b
+    
+    - name: Install Python dependencies
+      run: |
+        pip install --upgrade pip wheel setuptools
+        pip install buildozer cython==0.29.36
+    
+    - name: Build APK with Buildozer
+      run: |
+        buildozer -v android release
+        cp bin/*.apk .
+    
+    - name: Upload APK as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: english-quiz-app
+        path: *.apk
+        retention-days: 7
