@@ -9,7 +9,7 @@ source.dir = .
 source.main = main.py
 source.include_exts = py,png,jpg,kv,ttf
 
-requirements = python3==3.10.5,kivy==3.2.1,openssl
+requirements = python3==3.10.5,kivy==3.3.1,openssl
 android.sdk = 30
 android.api = 30
 android.ndk_path = auto
